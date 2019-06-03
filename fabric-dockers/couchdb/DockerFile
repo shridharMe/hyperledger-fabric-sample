@@ -1,0 +1,6 @@
+FROM hyperledger/fabric-couchdb:latest
+
+ENV COUCHDB_USER=peeradmin
+ENV COUCHDB_PASSWORD=peeradmin
+
+EXPOSE 5984

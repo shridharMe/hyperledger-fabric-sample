@@ -1,0 +1,191 @@
+
+# Version of config file
+version: 1.1.0-alpha
+
+# Server's listening port (default: 7054)
+port: 7054
+
+# Enables debug logging (default: false)
+debug: false
+
+# Size limit of an acceptable CRL in bytes (default: 512000)
+crlsizelimit: 512000
+tls:
+  # Enable TLS (default: false)
+  enabled: false
+  # TLS for the server's listening port
+  certfile:
+  keyfile:
+  clientauth:
+    type: noclientcert
+    certfiles:
+ca:
+  # Name of this CA
+  name:
+  # Key file (is only used to import a private key into BCCSP)
+  keyfile:
+  # Certificate file (default: ca-cert.pem)
+  certfile:
+  # Chain file
+  chainfile:
+
+crl:
+  expiry: 24h
+
+
+registry:
+  maxenrollments: -1
+  # Contains identity information which is used when LDAP is disabled
+  identities:
+     - name: admin
+       pass: adminpw
+       type: client
+       affiliation: ""
+       attrs:
+          hf.Registrar.Roles: "peer,orderer,client,user"
+          hf.Registrar.DelegateRoles: "peer,orderer,client,user"
+          hf.Revoker: true
+          hf.IntermediateCA: true
+          hf.GenCRL: true
+          hf.Registrar.Attributes: "*"
+          hf.AffiliationMgr: true
+
+db:
+  type: sqlite3
+  datasource: fabric-ca-server.db
+  tls:
+      enabled: false
+      certfiles:
+      client:
+        certfile:
+        keyfile:
+ldap:
+   enabled: false
+   # The URL of the LDAP server
+   url: ldap://<adminDN>:<adminPassword>@<host>:<port>/<base>
+   # TLS configuration for the client connection to the LDAP server
+   tls:
+      certfiles:
+      client:
+         certfile:
+         keyfile:
+   # Attribute related configuration for mapping from LDAP entries to Fabric CA attributes
+   attribute:
+      names: ['uid','member']
+      converters:
+         - name:
+           value:
+      maps:
+         groups:
+            - name:
+              value:
+
+#############################################################################
+#  Affiliation section
+#############################################################################
+affiliations:
+   org1:
+      - department1
+      - department2
+   org2:
+      - department1
+   org3:
+      - department1
+   org4:
+      - department1
+signing:
+    default:
+      usage:
+        - digital signature
+      expiry: 8760h
+    profiles:
+      ca:
+         usage:
+           - cert sign
+           - crl sign
+         expiry: 43800h
+         caconstraint:
+           isca: true
+           maxpathlen: 0
+      tls:
+         usage:
+            - signing
+            - key encipherment
+            - server auth
+            - client auth
+            - key agreement
+         expiry: 8760h
+
+csr:
+   cn: fabric-ca-server
+   names:
+      - C: US
+        ST: "North Carolina"
+        L:
+        O: Hyperledger
+        OU: Fabric
+   hosts:
+     - 0478100494dd
+     - localhost
+   ca:
+      expiry: 131400h
+      pathlength: 1
+
+bccsp:
+    default: SW
+    sw:
+        hash: SHA2
+        security: 256
+        filekeystore:
+            # The directory used for the software file-based keystore
+            keystore: msp/keystore
+
+cacount:
+
+cafiles:
+
+#############################################################################
+# Intermediate CA section
+#
+# The relationship between servers and CAs is as follows:
+#   1) A single server process may contain or function as one or more CAs.
+#      This is configured by the "Multi CA section" above.
+#   2) Each CA is either a root CA or an intermediate CA.
+#   3) Each intermediate CA has a parent CA which is either a root CA or another intermediate CA.
+#
+# This section pertains to configuration of #2 and #3.
+# If the "intermediate.parentserver.url" property is set,
+# then this is an intermediate CA with the specified parent
+# CA.
+#
+# parentserver section
+#    url - The URL of the parent server
+#    caname - Name of the CA to enroll within the server
+#
+# enrollment section used to enroll intermediate CA with parent CA
+#    profile - Name of the signing profile to use in issuing the certificate
+#    label - Label to use in HSM operations
+#
+# tls section for secure socket connection
+#   certfiles - PEM-encoded list of trusted root certificate files
+#   client:
+#     certfile - PEM-encoded certificate file for when client authentication
+#     is enabled on server
+#     keyfile - PEM-encoded key file for when client authentication
+#     is enabled on server
+#############################################################################
+intermediate:
+  parentserver:
+    url:
+    caname:
+
+  enrollment:
+    hosts:
+    profile:
+    label:
+
+  tls:
+    certfiles:
+    client:
+      certfile:
+      keyfile:

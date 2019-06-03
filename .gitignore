@@ -1,2 +1,4 @@
 config/
 bin/
+.vagrant
+Vagrantfile
