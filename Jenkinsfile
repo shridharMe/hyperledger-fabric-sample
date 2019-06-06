@@ -29,52 +29,54 @@ pipeline {
             parallel {
                 stage('peer') { 
                     steps{
-                        dir("peer"){
+                        dir("fabric-dockers"){
                             sh """               
                                 chmod +x dockerbuild.sh
-                                ./dockerbuild.sh -o org1 -p peer0 -m Org1MSP
-                                ./dockerbuild.sh -o org2 -p peer0 -m Org2MSP
-                                ./dockerbuild.sh -o org3 -p peer0 -m Org3MSP
-                                ./dockerbuild.sh -o org4 -p peer0 -m Org4MSP
+                                ./dockerbuild.sh -o org1 -p peer0 -m Org1MSP -f peer
+                                ./dockerbuild.sh -o org2 -p peer0 -m Org2MSP -f peer
+                                ./dockerbuild.sh -o org3 -p peer0 -m Org3MSP -f peer
+                                ./dockerbuild.sh -o org4 -p peer0 -m Org4MSP -f peer
                             """                        
                         }
                     }
                 }
                 stage('cli') { 
                     steps{
-                        dir("cli"){
+                        dir("fabric-dockers"){
                             sh """               
                                 chmod +x dockerbuild.sh
-                                ./dockerbuild.sh -o org1 -p peer0 -m Org1MSP
+                                ./dockerbuild.sh -o org1 -p peer0 -m Org1MSP -f cli
                             """                        
                         }
                 }
                 stage('ca') {
                     steps{
-                        dir("ca"){
+                        dir("fabric-dockers"){
                             sh """               
                                 chmod +x dockerbuild.sh
-                                ./dockerbuild.sh -o org1
+                                ./dockerbuild.sh -o org1 -f ca
                             """                        
                         }
                     }
                 }
                 stage('orderer') {
                     steps{
-                        dir("orderer"){
+                        dir("fabric-dockers"){
                             sh """               
                                 chmod +x dockerbuild.sh
-                                ./dockerbuild.sh -o org1
+                                ./dockerbuild.sh -or order -f orderer
                             """                        
                         }
                     }
                 }
-                stage('coucdb') {
+                stage('couchdb') {
                     steps{
-                        sh """               
-                            chmod +x generateArtifacts.sh
-                            ./generateArtifacts.sh
-                        """
+                        dir("fabric-dockers"){
+                            sh """               
+                                chmod +x dockerbuild.sh
+                                ./dockerbuild.sh -f couchdb
+                            """                        
+                        }
                     }
                 }
             }
@@ -83,9 +85,10 @@ pipeline {
     post {
        always {
            script{
-                 sh '''
-                    
-                 '''
+                   sh """
+                        docker system prune -af
+                        docker image prune -af
+                    """
            }         
        }    
     }
