@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -e
-while getopts "o:p:m:" opt; do
+while getopts "o:p:m:or:f:" opt; do
    case $opt in
     o) ORGNAME="$OPTARG"
       ;;
@@ -17,41 +17,58 @@ while getopts "o:p:m:" opt; do
      ;;
   esac
 done
-ORG_DOMAIN_NAME="$ORGNAME.$DOMAIN_NAME"
-if [ "$FABRIC" = "cli" ] ; then
-  
-  IMAGE_NAME="cli-$PEERNAME-$ORG_DOMAIN_NAME"
-  DOCKER_ARG="-e ORG_DOMAIN_NAME=$ORG_DOMAIN_NAME -e PEERNAME=$PEERNAME -e CORE_PEER_LOCALMSPID=$PEERMSP"
 
-elif [ "$FABRIC" = "ca" ] ; then
+if [ -z $WORKSPACE ] ; then
+   $WORKSPACE=`pwd`
+fi
+export ORG_DOMAIN_NAME="$ORGNAME.$DOMAIN_NAME"
+export PEERNAME=$PEERNAME 
+export CORE_PEER_LOCALMSPID=$PEERMSP
+export ORDERERNAME=$ORDERERNAME
+export DOMAIN_NAME=$DOMAIN_NAME
+
+
+if [ "$FABRIC" == "cli" ] ; then  
   
-  IMAGE_NAME=ca-$ORG_DOMAIN_NAME
+  if [ -z $ORGNAME ] || [ -z $PEERNAME ] || [ -z $PEERMSP ] ; then
+   echo "required values are missing; please pass org,peer and msp values"
+   exit 0;
+  fi
+
+  IMAGE_NAME="fabric-cli-$PEERNAME-$ORG_DOMAIN_NAME" 
+
+elif [ "$FABRIC" == "ca" ] ; then
+  IMAGE_NAME="fabric-ca-$ORG_DOMAIN_NAME"
   KEY_DIR="$WORKSPACE/network-config/crypto-config/peerOrganizations/$ORG_DOMAIN_NAME/ca"
   KEYNAME=$(find $KEY_DIR -type f -printf "%f\n" | grep _sk)
-  DOCKER_ARG="-e ORG_DOMAIN_NAME=$ORG_DOMAIN_NAME -e KEYFILE_NAME=$KEYNAME"
-
-elif [ "$FABRIC" = "orderer" ] ; then
-  
-  IMAGE_NAME=$ORDERERNAME-$DOMAIN_NAME
-  DOCKER_ARG="-e DOMAIN_NAME=$DOMAIN_NAME -e ORDERERNAME=$ORDERERNAME"
-
-elif [ "$FABRIC" = "peer" ] ; then
-  
-  IMAGE_NAME="$PEERNAME-$ORGNAME.$DOMAIN_NAME"
-  DOCKER_ARG="-e ORG_DOMAIN_NAME=$ORGNAME.$DOMAIN_NAME -e PEER_NAME=$PEERNAME -e CORE_PEER_LOCALMSPID=$PEERMSP"
-  
-elif [ "$FABRIC" = "couchdb" ] ; then
-  IMAGE_NAME="fabric-coucdb"
+  export KEYFILE_NAME=$KEYNAME
+elif [ "$FABRIC" == "orderer" ] ; then
+  IMAGE_NAME="fabric-$ORDERERNAME-$DOMAIN_NAME"
+elif [ "$FABRIC" == "peer" ] ; then
+  IMAGE_NAME="fabric-$PEERNAME-$ORGNAME.$DOMAIN_NAME" 
+elif [ "$FABRIC" == "couchdb" ] ; then
+  IMAGE_NAME="fabric-couchdb"
+else
+  echo "invalid fabric value; only valid values are peer,cli,ca,orderer or couchdb"
+  exit 0;
 fi
 
-if [ -z "$FABRIC" && -z "$DOCKER_ARG" ] ; then
 
- ehco "############## Building $FABRIC with argument \n $DOCKER_ARG ######################" 
- docker build $DOCKER_ARG -t shridharpatil01/$IMAGE_NAME:latest -f $FABRIC/Dockerfile
+if [ ! -z "$FABRIC" ] && [ ! -z "$IMAGE_NAME" ] ; then
 
- ehco "############## Pushing $FABRIC with argument \n $DOCKER_ARG ######################" 
+ echo "--------- Building $FABRIC -----------------------" 
+ docker build \
+ --build-arg ORG_DOMAIN_NAME  \
+ --build-arg PEERNAME  \
+ --build-arg CORE_PEER_LOCALMSPID  \
+ --build-arg ORDERERNAME  \
+ --build-arg DOMAIN_NAME  \
+ -t shridharpatil01/$IMAGE_NAME:latest -f $FABRIC/Dockerfile
+
+echo "--------- Pushing $FABRIC -----------------------" 
  docker push shridharpatil01/$IMAGE_NAME:latest
-
+else
+ echo "nothing to do for me"
 fi
 
 
